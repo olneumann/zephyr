@@ -9,77 +9,70 @@
 
 #include <zephyr/drivers/i2c.h>
 
-#define LSM303_DLHC_MAGN_X_EN_BIT	BIT(0)
-#define MMC5983MA_Y_EN_BIT	BIT(1)
-#define MMC5983MA_Z_EN_BIT	BIT(2)
-#define MMC5983MA_EN_BITS		(LSM303_DLHC_MAGN_X_EN_BIT | \
-					MMC5983MA_Y_EN_BIT | \
-					MMC5983MA_Z_EN_BIT)
+#define MMC5983MA_XOUT_0        0x00
+#define MMC5983MA_XOUT_1        0x01
+#define MMC5983MA_YOUT_0        0x02
+#define MMC5983MA_YOUT_1        0x03
+#define MMC5983MA_ZOUT_0        0x04
+#define MMC5983MA_ZOUT_1        0x05
+#define MMC5983MA_XYZOUT_2      0x06
+#define MMC5983MA_TOUT          0x07
+#define MMC5983MA_STATUS        0x08
+#define MMC5983MA_CONTROL_0     0x09
+#define MMC5983MA_CONTROL_1     0x0A
+#define MMC5983MA_CONTROL_2     0x0B
+#define MMC5983MA_CONTROL_3     0x0C
+#define MMC5983MA_PRODUCT_ID    0x2F // Should be 0x30
 
-#if	(CONFIG_MMC5983MA_ODR == 0)
-	#define MMC5983MA_DRDY_WAIT_TIME	134
-#elif	(CONFIG_MMC5983MA_ODR == 1)
-	#define MMC5983MA_DRDY_WAIT_TIME	67
-#elif	(CONFIG_MMC5983MA_ODR == 2)
-	#define MMC5983MA_DRDY_WAIT_TIME	34
-#elif	(CONFIG_MMC5983MA_ODR == 3)
-	#define MMC5983MA_DRDY_WAIT_TIME	14
-#elif	(CONFIG_MMC5983MA_ODR == 4)
-	#define MMC5983MA_DRDY_WAIT_TIME	7
-#elif	(CONFIG_MMC5983MA_ODR == 5)
-	#define MMC5983MA_DRDY_WAIT_TIME	4
-#elif	(CONFIG_MMC5983MA_ODR == 6)
-	#define MMC5983MA_DRDY_WAIT_TIME	2
-#elif	(CONFIG_MMC5983MA_ODR == 7)
-	#define MMC5983MA_DRDY_WAIT_TIME	1
-#endif
+#define MASK_BANDWIDTH          GENMASK(1,0)
+#define MASK_FREQUENCY	        GENMASK(2,0) 
+#define MASK_PRD_SET            GENMASK(6,4)
 
-#define MMC5983MA_ODR_SHIFT	2
-#define MMC5983MA_ODR_BITS	(CONFIG_MMC5983MA_ODR << \
-					MMC5983MA_ODR_SHIFT)
+#define MMC5983MA_ADDRESS       0x30
 
-#if	(CONFIG_MMC5983MA_RANGE == 1)
-	#define MMC5983MA_LSB_GAUSS_XY    1100
-	#define MMC5983MA_LSB_GAUSS_Z     980
-#elif	(CONFIG_MMC5983MA_RANGE == 2)
-	#define MMC5983MA_LSB_GAUSS_XY    855
-	#define MMC5983MA_LSB_GAUSS_Z     760
-#elif	(CONFIG_MMC5983MA_RANGE == 3)
-	#define MMC5983MA_LSB_GAUSS_XY    670
-	#define MMC5983MA_LSB_GAUSS_Z     600
-#elif	(CONFIG_MMC5983MA_RANGE == 4)
-	#define MMC5983MA_LSB_GAUSS_XY    450
-	#define MMC5983MA_LSB_GAUSS_Z     400
-#elif	(CONFIG_MMC5983MA_RANGE == 5)
-	#define MMC5983MA_LSB_GAUSS_XY    400
-	#define MMC5983MA_LSB_GAUSS_Z     355
-#elif	(CONFIG_MMC5983MA_RANGE == 6)
-	#define MMC5983MA_LSB_GAUSS_XY    330
-	#define MMC5983MA_LSB_GAUSS_Z     295
-#elif	(CONFIG_MMC5983MA_RANGE == 7)
-	#define MMC5983MA_LSB_GAUSS_XY    230
-	#define MMC5983MA_LSB_GAUSS_Z     205
-#endif
+// Frequencies
+enum mmc5983ma_frequency {
+	MMC5983MA_FREQ_ONESHOT,
+	MMC5983MA_FREQ_1Hz,
+	MMC5983MA_FREQ_10Hz,
+	MMC5983MA_FREQ_20Hz,
+	MMC5983MA_FREQ_50Hz,
+	MMC5983MA_FREQ_100Hz,
+	MMC5983MA_FREQ_200Hz, // BW = 0x01 only
+	MMC5983MA_FREQ_1000Hz, // BW = 0x11 only
+};
 
-#define MMC5983MA_FS_SHIFT	5
-#define MMC5983MA_FS_BITS		(CONFIG_MMC5983MA_RANGE << \
-					MMC5983MA_FS_SHIFT)
-#define MMC5983MA_CONT_UPDATE	0x00
-#define MMC5983MA_DRDY		BIT(0)
+//Bandwidths
+enum mmc5983ma_bandwidth {
+	MMC5983MA_MBW_100Hz,
+	MMC5983MA_MBW_200Hz,
+	MMC5983MA_MBW_400Hz,
+	MMC5983MA_MBW_800Hz,
+};
 
-#define MMC5983MA_CRA_REG_M		0x00
-#define MMC5983MA_CRB_REG_M		0x01
-#define MMC5983MA_MR_REG_M		0x02
-#define MMC5983MA_REG_MAGN_X_LSB	0x03
-#define MMC5983MA_SR_REG_M		0x09
+// Set/Reset as a function of measurements
+enum mmc5983ma_prd_set {
+	MMC5983MA_DT_PRD_SET_1ms,
+	MMC5983MA_DT_PRD_SET_25ms,
+	MMC5983MA_DT_PRD_SET_75ms,
+	MMC5983MA_DT_PRD_SET_100ms,
+	MMC5983MA_DT_PRD_SET_250ms,
+	MMC5983MA_DT_PRD_SET_500ms,
+	MMC5983MA_DT_PRD_SET_1000ms,
+	MMC5983MA_DT_PRD_SET_2000ms,
+};
 
-struct MMC5983MA_data {
+struct mmc5983ma_config {
+	struct i2c_dt_spec i2c;
+	uint8_t bandwidth;
+	uint8_t frequency;
+	uint8_t prd_set;
+};
+
+struct mmc5983ma_data {
 	int16_t magn_x;
 	int16_t magn_y;
 	int16_t magn_z;
 };
 
-struct MMC5983MA_config {
-	struct i2c_dt_spec i2c;
-};
 #endif /* _SENSOR_MMC5983MA_ */
