@@ -26,7 +26,7 @@ properties:
     type: int
     default: 0
     description: |
-      Specify the default CM frequency expressed in Hz.
+      Specify the default continuous measurement frequency expressed in Hz.
 
       - 0     # MMC5983MA_FREQ_ONESHOT
       - 1     # MMC5983MA_FREQ_1Hz
@@ -43,7 +43,7 @@ properties:
     type: int
     default: 0
     description: |
-      Specify the default PRD set expressed in ms
+      This value determines how often the chip will do a set operation. This will allow large set current to flow throug hthe sensor couls for 500ns. 
 
       - 1     # MMC5983MA_PRD_SET_1ms
       - 25    # MMC5983MA_PRD_SET_25ms

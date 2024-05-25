@@ -9,6 +9,8 @@
 
 #include <zephyr/drivers/i2c.h>
 
+#define MMC5983MA_I2C_ADDR      0x30
+
 #define MMC5983MA_XOUT_0        0x00
 #define MMC5983MA_XOUT_1        0x01
 #define MMC5983MA_YOUT_0        0x02
@@ -24,11 +26,19 @@
 #define MMC5983MA_CONTROL_3     0x0C
 #define MMC5983MA_PRODUCT_ID    0x2F // Should be 0x30
 
+#define MASK_TM_M			    BIT(0)
+#define MASK_MEAS_M_DONE		BIT(0)
+#define MASK_DRDY_INTERRUPT	    BIT(2)
+#define MASK_CMM_EN			    BIT(3)	
+#define MASK_OP_SET_MODE        BIT(3)
+#define MASK_OP_RESET_MODE      BIT(4)
 #define MASK_BANDWIDTH          GENMASK(1,0)
 #define MASK_FREQUENCY	        GENMASK(2,0) 
 #define MASK_PRD_SET            GENMASK(6,4)
+#define MASK_END_PRD_SET		BIT(7)
 
-#define MMC5983MA_ADDRESS       0x30
+#define PARAM_NULLFIELD_18BIT 	131072
+#define PARAM_NULLFIELD_16BIT 	32768
 
 // Frequencies
 enum mmc5983ma_frequency {
@@ -64,15 +74,16 @@ enum mmc5983ma_prd_set {
 
 struct mmc5983ma_config {
 	struct i2c_dt_spec i2c;
-	uint8_t bandwidth;
-	uint8_t frequency;
-	uint8_t prd_set;
+	uint16_t bandwidth;
+	uint16_t frequency;
+	uint16_t prd_set;
 };
 
 struct mmc5983ma_data {
-	int16_t magn_x;
-	int16_t magn_y;
-	int16_t magn_z;
+	uint32_t magn_x;
+	uint32_t magn_y;
+	uint32_t magn_z;
+	struct k_sem sem;
 };
 
 #endif /* _SENSOR_MMC5983MA_ */
