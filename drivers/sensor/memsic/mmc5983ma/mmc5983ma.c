@@ -44,12 +44,8 @@ static int mmc5983ma_sample_fetch(const struct device *dev, enum sensor_channel 
 
 static void mmc5983ma_convert(struct sensor_value *val, uint32_t raw_val)
 {
-	int64_t dval;
-
-	dval = ((int64_t)raw_val - PARAM_NULLFIELD_18BIT);
-
-	val->val1 = dval / 1000LL; // TODO: proper scaling
-	val->val2 = dval % 1000LL;
+	val->val1 = ((int32_t)raw_val-PARAM_NULLFIELD_18BIT) / PARAM_MAGN_LSB_GAUSS;
+	val->val2 = (1000000 * ((int32_t)raw_val-PARAM_NULLFIELD_18BIT) / PARAM_MAGN_LSB_GAUSS) % 1000000;
 }
 
 static int mmc5983ma_channel_get(const struct device *dev, enum sensor_channel chan, struct sensor_value *val)
@@ -87,10 +83,21 @@ static const struct sensor_driver_api mmc5983ma_driver_api = {
 	.channel_get = mmc5983ma_channel_get,
 };
 
-static int mmc5983ma_set_internal_control_1(const struct device *dev, uint16_t bandwidth)
+static int mmc5983ma_set_internal_control_0(const struct device *dev, bool auto_sr_en, bool drdy_interrupt)
+{
+	const struct mmc5983ma_config *config = dev->config;
+	uint8_t reg = 0;
+
+	reg |= (auto_sr_en << BIT_AUTO_SR_EN) | (drdy_interrupt << BIT_DRDY_INTERRUPT);
+
+	return i2c_reg_write_byte_dt(&config->i2c, MMC5983MA_CONTROL_0, reg);
+}
+
+static int mmc5983ma_set_internal_control_1(const struct device *dev, uint16_t bandwidth, bool sw_rst)
 {
 	const struct mmc5983ma_config *config = dev->config;
 	uint8_t bw_bits;
+	uint8_t reg = 0;
 
 	switch (bandwidth) {
 		case 100:
@@ -110,13 +117,16 @@ static int mmc5983ma_set_internal_control_1(const struct device *dev, uint16_t b
 			return -EINVAL;
 	}
 
-	return i2c_reg_write_byte_dt(&config->i2c, MMC5983MA_CONTROL_1, bw_bits);
+	reg |= (sw_rst << BIT_SW_RST) | bw_bits;
+
+	return i2c_reg_write_byte_dt(&config->i2c, MMC5983MA_CONTROL_1, reg);
 }
 
-static int mmc5983ma_set_internal_control_2(const struct device *dev, uint16_t frequency, uint16_t prd)
+static int mmc5983ma_set_internal_control_2(const struct device *dev, uint16_t frequency, uint16_t prd, bool cmm_en, bool en_prd_set)
 {
 	const struct mmc5983ma_config *config = dev->config;
 	uint8_t freq_bits, prd_bits;
+	uint8_t reg = 0;
 
 	switch (frequency) {
 		case 1:
@@ -175,9 +185,9 @@ static int mmc5983ma_set_internal_control_2(const struct device *dev, uint16_t f
 			return -EINVAL;
 	}
 
-	/* Take frequency and prd set from dts and enable those via the dedicated bit */
+	reg |= (en_prd_set << BIT_EN_PRD_SET) | (prd_bits << 4) | (cmm_en << BIT_CMM_EN) | freq_bits;
 
-	return i2c_reg_write_byte_dt(&config->i2c, MMC5983MA_CONTROL_2, freq_bits | 0x08 | prd_bits << 4 | 0x80);
+	return i2c_reg_write_byte_dt(&config->i2c, MMC5983MA_CONTROL_2, reg);
 }
 
 static int mmc5983ma_init(const struct device *dev)
@@ -189,33 +199,20 @@ static int mmc5983ma_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	/* Reset device */
-	if (i2c_reg_write_byte_dt(&config->i2c, MMC5983MA_CONTROL_1, 0x80) < 0) {
-		LOG_ERR("Failed to reset device");
-		return -EIO;
-	}
-
-	/* Check product ID */
-	uint8_t product_id;
-	if (i2c_reg_read_byte_dt(&config->i2c, MMC5983MA_PRODUCT_ID, &product_id) < 0) {
-		LOG_ERR("Failed to read product ID");
-		return -EIO;
-	}
-
-	/* Enable drdy interrupt pin and auto set operation mode */
-	if (i2c_reg_write_byte_dt(&config->i2c, MMC5983MA_CONTROL_1, 0x20 | 0x04) < 0) {
-		LOG_ERR("Failed to enable drdy interrupt pin and auto set operation mode");
+	/* Set internal control 0 */
+	if (mmc5983ma_set_internal_control_0(dev, true, false) < 0) {
+		LOG_ERR("Failed to set internal control 0");
 		return -EIO;
 	}
 
 	/* Set internal control 1 */
-	if (mmc5983ma_set_internal_control_1(dev, config->bandwidth) < 0) {
+	if (mmc5983ma_set_internal_control_1(dev, config->bandwidth, false) < 0) {
 		LOG_ERR("Failed to set internal control 1");
 		return -EIO;
 	}
 
 	/* Set internal control 2 */
-	if (mmc5983ma_set_internal_control_2(dev, config->frequency, config->prd_set) < 0) {
+	if (mmc5983ma_set_internal_control_2(dev, config->frequency, config->prd_set, true, true) < 0) {
 		LOG_ERR("Failed to set internal control 2");
 		return -EIO;
 	}

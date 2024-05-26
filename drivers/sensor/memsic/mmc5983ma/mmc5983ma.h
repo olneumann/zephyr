@@ -26,19 +26,27 @@
 #define MMC5983MA_CONTROL_3     0x0C
 #define MMC5983MA_PRODUCT_ID    0x2F // Should be 0x30
 
-#define MASK_TM_M			    BIT(0)
-#define MASK_MEAS_M_DONE		BIT(0)
-#define MASK_DRDY_INTERRUPT	    BIT(2)
-#define MASK_CMM_EN			    BIT(3)	
-#define MASK_OP_SET_MODE        BIT(3)
-#define MASK_OP_RESET_MODE      BIT(4)
+// internal control 0 register
+#define BIT_TM_M			    0
+#define BIT_TM_T 				1
+#define BIT_DRDY_INTERRUPT	    2
+#define BIT_SET_MODE        	3
+#define BIT_RESET_MODE      	4
+#define BIT_AUTO_SR_EN			5
+
+// internal control 1 register
 #define MASK_BANDWIDTH          GENMASK(1,0)
+#define BIT_SW_RST		        7
+
+// internal control 2 register
 #define MASK_FREQUENCY	        GENMASK(2,0) 
+#define BIT_CMM_EN			    3	
 #define MASK_PRD_SET            GENMASK(6,4)
-#define MASK_END_PRD_SET		BIT(7)
+#define BIT_EN_PRD_SET			7
 
 #define PARAM_NULLFIELD_18BIT 	131072
 #define PARAM_NULLFIELD_16BIT 	32768
+#define PARAM_MAGN_LSB_GAUSS    16000 // 0.25mG/LSB or 0.0625mG/LSB for 16 or 18 bit
 
 // Frequencies
 enum mmc5983ma_frequency {
