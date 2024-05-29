@@ -22,6 +22,40 @@ Build System
   out-of-tree SoCs and boards to be ported to the new model. See the
   :ref:`hw_model_v2` for more detailed information. (:github:`69607`)
 
+* The following build-time generated headers:
+
+  .. list-table::
+     :header-rows: 1
+
+     * - Affected header files
+     * - ``app_version.h``
+     * - ``autoconf.h``
+     * - ``cmake_intdef.h``
+     * - ``core-isa-dM.h``
+     * - ``devicetree_generated.h``
+     * - ``driver-validation.h``
+     * - ``kobj-types-enum.h``
+     * - ``linker-kobject-prebuilt-data.h``
+     * - ``linker-kobject-prebuilt-priv-stacks.h``
+     * - ``linker-kobject-prebuilt-rodata.h``
+     * - ``mcuboot_version.h``
+     * - ``offsets.h``
+     * - ``otype-to-size.h``
+     * - ``otype-to-str.h``
+     * - ``strerror_table.h``
+     * - ``strsignal_table.h``
+     * - ``syscall_list.h``
+     * - ``version.h``
+     * - ``zsr.h``
+
+  as well as syscall headers & sources are now namespaced into the ``zephyr/`` folder. The change is largely
+  automated, and the script can be found in :github:`63973`.
+  For the time being, the compatibility Kconfig (:kconfig:option:`CONFIG_LEGACY_GENERATED_INCLUDE_PATH`)
+  is enabled by default so that downstream applications will continue to compile, a warning message
+  will be generated during CMake configuration time.
+  This Kconfig will be deprecated and eventually removed in the future, developers are advised to
+  update the include paths of these affected headers as soon as possible.
+
 Kernel
 ******
 
@@ -114,6 +148,10 @@ Device Drivers and Devicetree
             status = "okay";
         };
     };
+
+* The :dtcompatible:`nxp,kinetis-lptmr` compatible string has been changed to
+  :dtcompatible:`nxp,lptmr`. The old string will be usable for a short time, but
+  should be replaced for it will be removed in the future.
 
 * Some of the driver API structs have been rename to have the required ``_driver_api`` suffix. (:github:`72182`)
   The following types have been renamed:
@@ -301,6 +339,20 @@ Input
 Interrupt Controller
 ====================
 
+* The static auto-generation of the multilevel interrupt controller lookup table has been
+  deprecated, and will be compiled only when the new compatibility Kconfig:
+  :kconfig:option:`CONFIG_LEGACY_MULTI_LEVEL_TABLE_GENERATION` is enabled, which will eventually
+  be removed in the coming releases.
+
+  Multi-level interrupt controller drivers should be updated to use the newly created
+  ``IRQ_PARENT_ENTRY_DEFINE`` macro to register itself with the new multi-level interrupt
+  architecture. To make the macro easier to use, ``INTC_INST_ISR_TBL_OFFSET`` macro is made to
+  deduce the software ISR table offset for a given driver instance, for pseudo interrupt controller
+  child, use the ``INTC_CHILD_ISR_TBL_OFFSET`` macro instead. New devicetree macros
+  (``DT_INTC_GET_AGGREGATOR_LEVEL`` & ``DT_INST_INTC_GET_AGGREGATOR_LEVEL``) have been added
+  for an interrupt controller driver instance to pass its aggregator level into the
+  ``IRQ_PARENT_ENTRY_DEFINE`` macro.
+
 LED Strip
 =========
 
@@ -456,6 +508,11 @@ Networking
   during a Coap Block-wise transfer. Any post write, validate or some firmware callbacks
   should be updated to include this parameter. (:github:`72590`)
 
+* The DNS resolver and mDNS/LLMNR responders are converted to use socket service API.
+  This means that the number of pollable sockets in the system might need to be increased.
+  Please check that the values of :kconfig:option:`CONFIG_NET_SOCKETS_POLL_MAX` and
+  :kconfig:option:`CONFIG_POSIX_MAX_FDS` are high enough. Unfortunately no exact values
+  for these can be given as it depends on application needs and usage. (:github:`72834`)
 
 
 Other Subsystems

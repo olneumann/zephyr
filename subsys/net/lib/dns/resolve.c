@@ -907,7 +907,7 @@ static void svc_handler(struct k_work *work)
 	int ret;
 
 	ret = recv_data(pev);
-	if (ret < 0) {
+	if (ret < 0 && ret != DNS_EAI_ALLDONE) {
 		NET_ERR("DNS recv error (%d)", ret);
 	}
 }
@@ -1073,8 +1073,8 @@ static int dns_resolve_cancel_with_hash(struct dns_resolve_context *ctx,
 	}
 
 	NET_DBG("Cancelling DNS req %u (name %s type %d hash %u)", dns_id,
-		query_name, ctx->queries[i].query_type,
-		query_hash);
+		query_name == NULL ? "<unknown>" : query_name,
+		ctx->queries[i].query_type, query_hash);
 
 	dns_resolve_cancel_slot(ctx, i);
 

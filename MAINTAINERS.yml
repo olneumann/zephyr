@@ -646,6 +646,7 @@ Coding Guidelines:
     - nashif
     - carlescufi
     - jfischer-no
+    - simhein
   files:
     - .checkpatch.conf
     - .clang-format
@@ -1421,7 +1422,7 @@ Release Notes:
     - fgrandel
   collaborators:
     - rlubos
-    - jciupis
+    - ankuns
     - cfriedt
     - jukkar
   files:
@@ -1817,6 +1818,7 @@ Release Notes:
     - yperess
     - tristan-google
     - ubieda
+    - jeppenodgaard
   files:
     - drivers/sensor/
     - include/zephyr/drivers/sensor.h
@@ -4205,6 +4207,16 @@ West:
     - modules/fatfs/
   labels:
     - "area: Storage"
+
+"West project: hal_adi":
+  status: maintained
+  maintainers:
+    - MaureenHelm
+  collaborators:
+    - ozersa
+  files: []
+  labels:
+    - "platform: ADI"
 
 "West project: hal_altera":
   status: odd fixes
