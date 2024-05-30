@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef __SENSOR_MMC5983MA_
-#define __SENSOR_MMC5983MA_
+#ifndef __SENSOR_MMC5983MA_H_
+#define __SENSOR_MMC5983MA_H_
 
 #include <zephyr/drivers/i2c.h>
 
@@ -94,4 +94,4 @@ struct mmc5983ma_data {
 	struct k_sem sem;
 };
 
-#endif /* _SENSOR_MMC5983MA_ */
+#endif /* _SENSOR_MMC5983MA_H_ */

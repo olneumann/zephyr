@@ -1,0 +1,4 @@
+# zephyr-keep-sorted-start
+source "drivers/sensor/melexis/mlx90393/Kconfig"
+source "drivers/sensor/melexis/mlx90395/Kconfig"
+# zephyr-keep-sorted-stop

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2023 Linumiz
+
+description: |
+  Melexis MLX90395 3-axis magnetometer sensor accessed through I2C bus
+
+compatible: "melexis,mlx90395"
+
+include: [sensor-device.yaml, i2c-device.yaml]

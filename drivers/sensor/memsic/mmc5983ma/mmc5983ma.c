@@ -20,14 +20,15 @@ static int mmc5983ma_sample_fetch(const struct device *dev, enum sensor_channel 
 {
 	const struct mmc5983ma_config *config = dev->config;
 	struct mmc5983ma_data *data = dev->data;
+	int ret = 0;
 
-	uint8_t buffer[7] = {0};
+	uint8_t buffer[7] = { 0 };
 
 	k_sem_take(&data->sem, K_FOREVER);
 
 	if (i2c_burst_read_dt(&config->i2c, MMC5983MA_XOUT_0, buffer, sizeof(buffer)) < 0) {
 		LOG_ERR("Failed to read data sample");
-		return -EIO;
+		ret = -EIO;
 	}
 
 	k_sem_give(&data->sem);
@@ -36,7 +37,7 @@ static int mmc5983ma_sample_fetch(const struct device *dev, enum sensor_channel 
 	data->magn_y = (uint32_t)(buffer[2] << 10 | buffer[3] << 2 | (buffer[6] & 0x30) >> 4); // Turn the 18 bits into a unsigned 32-bit value
 	data->magn_z = (uint32_t)(buffer[4] << 10 | buffer[5] << 2 | (buffer[6] & 0x0C) >> 2); // Turn the 18 bits into a unsigned 32-bit value
 
-	return 0;
+	return ret;
 }
 
 static int mmc5983ma_convert(struct sensor_value *val, uint32_t raw_val)
@@ -49,8 +50,8 @@ static int mmc5983ma_convert(struct sensor_value *val, uint32_t raw_val)
 
 static int mmc5983ma_channel_get(const struct device *dev, enum sensor_channel chan, struct sensor_value *val)
 {
-	int ret = 0;
 	struct mmc5983ma_data *data = dev->data;
+	int ret = 0;
 
 	k_sem_take(&data->sem, K_FOREVER);
 

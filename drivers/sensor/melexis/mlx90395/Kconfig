@@ -1,0 +1,12 @@
+# MLX90395 Kconfig
+
+# Copyright (c) 2024 Oliver Neumann
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig MLX90395
+	bool "MLX90395 Three Axis Magnetometer"
+	default y
+	depends on DT_HAS_MELEXIS_MLX90395_ENABLED
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_MELEXIS_MLX90395),i2c)
+	help
+	  Enable support for the MLX90395 Three Axis Magnetometer.
