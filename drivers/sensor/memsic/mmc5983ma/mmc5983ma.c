@@ -6,8 +6,9 @@
 
 #define DT_DRV_COMPAT memsic_mmc5983ma
 
-#include <zephyr/drivers/i2c.h>
 #include <zephyr/init.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 
@@ -18,63 +19,63 @@ LOG_MODULE_REGISTER(MMC5983MA, CONFIG_SENSOR_LOG_LEVEL);
 static int mmc5983ma_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
 	const struct mmc5983ma_config *config = dev->config;
-	struct mmc5983ma_data *drv_data = dev->data;
+	struct mmc5983ma_data *data = dev->data;
 
 	uint8_t buffer[7] = {0};
+
+	k_sem_take(&data->sem, K_FOREVER);
 
 	if (i2c_burst_read_dt(&config->i2c, MMC5983MA_XOUT_0, buffer, sizeof(buffer)) < 0) {
 		LOG_ERR("Failed to read data sample");
 		return -EIO;
 	}
 
-	drv_data->magn_x = buffer[0];
-	drv_data->magn_x = (drv_data->magn_x << 8) | buffer[1];
-	drv_data->magn_x = (drv_data->magn_x << 2) | (buffer[6] >> 6);
+	k_sem_give(&data->sem);
 
-	drv_data->magn_y = buffer[2];
-	drv_data->magn_y = (drv_data->magn_y << 8) | buffer[3];
-	drv_data->magn_y = (drv_data->magn_y << 2) | ((buffer[6] >> 4) & 0x03);
-
-	drv_data->magn_z = buffer[4];
-	drv_data->magn_z = (drv_data->magn_z << 8) | buffer[5];
-	drv_data->magn_z = (drv_data->magn_z << 2) | ((buffer[6] >> 2) & 0x03);
+	data->magn_x = (uint32_t)(buffer[0] << 10 | buffer[1] << 2 | (buffer[6] & 0xC0) >> 6); // Turn the 18 bits into a unsigned 32-bit value
+	data->magn_y = (uint32_t)(buffer[2] << 10 | buffer[3] << 2 | (buffer[6] & 0x30) >> 4); // Turn the 18 bits into a unsigned 32-bit value
+	data->magn_z = (uint32_t)(buffer[4] << 10 | buffer[5] << 2 | (buffer[6] & 0x0C) >> 2); // Turn the 18 bits into a unsigned 32-bit value
 
 	return 0;
 }
 
-static void mmc5983ma_convert(struct sensor_value *val, uint32_t raw_val)
+static int mmc5983ma_convert(struct sensor_value *val, uint32_t raw_val)
 {
-	val->val1 = ((int32_t)raw_val-PARAM_NULLFIELD_18BIT) / PARAM_MAGN_LSB_GAUSS;
-	val->val2 = (1000000 * ((int32_t)raw_val-PARAM_NULLFIELD_18BIT) / PARAM_MAGN_LSB_GAUSS) % 1000000;
+	double value = sys_le16_to_cpu(raw_val);
+	value = (value - PARAM_NULLFIELD_18BIT) / PARAM_MAGN_LSB_GAUSS;
+	
+	return sensor_value_from_double(val, value);
 }
 
 static int mmc5983ma_channel_get(const struct device *dev, enum sensor_channel chan, struct sensor_value *val)
 {
 	int ret = 0;
-	struct mmc5983ma_data *drv_data = dev->data;
+	struct mmc5983ma_data *data = dev->data;
 
-	//k_sem_take(&drv_data->sem, K_FOREVER);
+	k_sem_take(&data->sem, K_FOREVER);
+
 	switch (chan) {
 		case SENSOR_CHAN_MAGN_X:
-			mmc5983ma_convert(val, drv_data->magn_x);
+			mmc5983ma_convert(val, data->magn_x);
 			break;
 		case SENSOR_CHAN_MAGN_Y:
-			mmc5983ma_convert(val, drv_data->magn_y);
+			mmc5983ma_convert(val, data->magn_y);
 			break;
 		case SENSOR_CHAN_MAGN_Z:
-			mmc5983ma_convert(val, drv_data->magn_z);
+			mmc5983ma_convert(val, data->magn_z);
 			break;
 		case SENSOR_CHAN_MAGN_XYZ:
-			mmc5983ma_convert(&val[0], drv_data->magn_x);
-			mmc5983ma_convert(&val[1], drv_data->magn_y);
-			mmc5983ma_convert(&val[2], drv_data->magn_z);
+			mmc5983ma_convert(&val[0], data->magn_x);
+			mmc5983ma_convert(&val[1], data->magn_y);
+			mmc5983ma_convert(&val[2], data->magn_z);
 			break;
 		default:
 			LOG_ERR("Unsupported channel");
 			ret = -ENOTSUP;	
 	}
 
-	//k_sem_give(&drv_data->sem);
+	k_sem_give(&data->sem);
+
 	return ret;
 }
 
@@ -193,6 +194,7 @@ static int mmc5983ma_set_internal_control_2(const struct device *dev, uint16_t f
 static int mmc5983ma_init(const struct device *dev)
 {
 	const struct mmc5983ma_config *config = dev->config;
+	struct mmc5983ma_data *data = dev->data;
 
 	if (!device_is_ready(config->i2c.bus)) {
 		LOG_ERR("I2C bus device not ready");
@@ -216,6 +218,11 @@ static int mmc5983ma_init(const struct device *dev)
 		LOG_ERR("Failed to set internal control 2");
 		return -EIO;
 	}
+
+	/* Initialize semaphore */
+	k_sem_init(&data->sem, 1, 1);
+
+	LOG_INF("MMC5983 Initialized");
 
 	return 0;
 }
