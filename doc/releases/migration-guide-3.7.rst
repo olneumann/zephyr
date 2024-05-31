@@ -96,6 +96,14 @@ MbedTLS
 MCUboot
 =======
 
+Trusted Firmware-M
+==================
+
+* The default MCUboot signature type has been changed from RSA-3072 to EC-P256.
+  This affects builds that have MCUboot enabled in TF-M (:kconfig:option:`CONFIG_TFM_BL2`).
+  If you wish to keep using RSA-3072, you need to set :kconfig:option:`CONFIG_TFM_MCUBOOT_SIGNATURE_TYPE`
+  to `"RSA-3072"`. Otherwise, make sure to have your own signing keys of the signature type in use.
+
 zcbor
 =====
 
@@ -428,14 +436,18 @@ Bluetooth Audio
 ===============
 
 * :kconfig:option:`CONFIG_BT_ASCS`, :kconfig:option:`CONFIG_BT_PERIPHERAL` and
-  :kconfig:option:`CONFIG_BT_ISO_PERIPHERAL` are not longer `select`ed automatically when
+  :kconfig:option:`CONFIG_BT_ISO_PERIPHERAL` are no longer enabled automatically when
   enabling :kconfig:option:`CONFIG_BT_BAP_UNICAST_SERVER`, and these must now be set explicitly
   in the project configuration file. (:github:`71993`)
-* The discover callback functions :code:`bt_cap_initiator_cb.unicast_discovery_complete`` and
-  :code:`bt_cap_commander_cb.discovery_complete`` for CAP now contain an additional parameter for
+
+* The discover callback functions :code:`bt_cap_initiator_cb.unicast_discovery_complete` and
+  :code:`bt_cap_commander_cb.discovery_complete` for CAP now contain an additional parameter for
   the set member.
   This needs to be added to all instances of CAP discovery callback functions defined.
   (:github:`72797`)
+
+* All occurrences of ``set_sirk`` have been changed to just ``sirk`` as the ``s`` in ``sirk`` stands
+  for set. (:github:`73413`)
 
 Bluetooth Classic
 =================
@@ -525,6 +537,11 @@ Networking
   :kconfig:option:`CONFIG_POSIX_MAX_FDS` are high enough. Unfortunately no exact values
   for these can be given as it depends on application needs and usage. (:github:`72834`)
 
+* The packet socket (type ``AF_PACKET``) protocol field in ``socket`` API call has changed.
+  The protocol field should be in network byte order so that we are compatible with Linux
+  socket calls. Linux expects the protocol field to be ``htons(ETH_P_ALL)`` if it is desired
+  to receive all the network packets. See details in
+  https://www.man7.org/linux/man-pages/man7/packet.7.html documentation. (:github:`73338`)
 
 Other Subsystems
 ****************
@@ -583,6 +600,9 @@ Architectures
 *************
 
 * Function :c:func:`arch_start_cpu` has been renamed to :c:func:`arch_cpu_start`. (:github:`64987`)
+
+* ``CONFIG_ARM64_ENABLE_FRAME_POINTER`` is deprecated. Use :kconfig:option:`CONFIG_FRAME_POINTER`
+  instead. (:github:`72646`)
 
 * x86
 
