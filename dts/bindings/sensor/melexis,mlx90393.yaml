@@ -7,3 +7,51 @@ description: |
 compatible: "melexis,mlx90393"
 
 include: [sensor-device.yaml, i2c-device.yaml]
+
+properties:
+  bandwidth:
+    type: int
+    default: 0
+    description: |
+      Specify the default bandwidth expressed in Hz.
+
+      - 100 # MMC5983MA_MBW_100Hz
+      - 200 # MMC5983MA_MBW_200Hz
+      - 400 # MMC5983MA_MBW_400Hz
+      - 800 # MMC5983MA_MBW_800Hz
+
+    enum: [100, 200, 400, 800]
+
+  frequency:
+    type: int
+    default: 0
+    description: |
+      Specify the default continuous measurement frequency expressed in Hz.
+
+      - 0     # MMC5983MA_FREQ_ONESHOT
+      - 1     # MMC5983MA_FREQ_1Hz
+      - 10    # MMC5983MA_FREQ_10Hz
+      - 20    # MMC5983MA_FREQ_20Hz
+      - 50    # MMC5983MA_FREQ_50Hz
+      - 100   # MMC5983MA_FREQ_100Hz
+      - 200   # MMC5983MA_FREQ_200Hz
+      - 1000  # MMC5983MA_FREQ_1000Hz
+
+    enum: [0, 1, 10, 20, 50, 100, 200, 1000]
+
+  prd-set:
+    type: int
+    default: 0
+    description: |
+      This value determines how often the chip will do a set operation. This will allow large set current to flow throug hthe sensor couls for 500ns. 
+
+      - 1     # MMC5983MA_PRD_SET_1ms
+      - 25    # MMC5983MA_PRD_SET_25ms
+      - 75    # MMC5983MA_PRD_SET_75ms
+      - 100   # MMC5983MA_PRD_SET_100ms
+      - 250   # MMC5983MA_PRD_SET_250ms
+      - 500   # MMC5983MA_PRD_SET_500ms
+      - 1000  # MMC5983MA_PRD_SET_1000ms
+      - 2000  # MMC5983MA_PRD_SET_2000ms
+
+    enum: [1, 25, 75, 100, 250, 500, 1000, 2000]
