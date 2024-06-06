@@ -35,6 +35,7 @@
 		led1 = &led1;
 		led2 = &led2;
 		led3 = &led3;
+		resetinfo = &cpuapp_resetinfo;
 		sw0 = &button0;
 		sw1 = &button1;
 		sw2 = &button2;
@@ -108,6 +109,10 @@
 	status = "okay";
 };
 
+&ram21_region {
+	status = "okay";
+};
+
 &cpuapp_bellboard {
 	status = "okay";
 	interrupts = <96 NRF_DEFAULT_IRQ_PRIORITY>;
@@ -153,6 +158,10 @@ ipc0: &cpuapp_cpurad_ipc {
 };
 
 &cpuapp_dma_region {
+	status = "okay";
+};
+
+&dma_fast_region {
 	status = "okay";
 };
 

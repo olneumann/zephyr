@@ -850,6 +850,50 @@
 		num-bidir-endpoints = <8>;
 		status = "disabled";
 	};
+
+	lpcmp0: lpcmp@51000 {
+		compatible = "nxp,lpcmp";
+		reg = <0x51000 0x1000>;
+		interrupts = <109 0>;
+		status = "disabled";
+		#io-channel-cells = <2>;
+	};
+
+	lpcmp1: lpcmp@52000 {
+		compatible = "nxp,lpcmp";
+		reg = <0x52000 0x1000>;
+		interrupts = <110 0>;
+		status = "disabled";
+		#io-channel-cells = <2>;
+	};
+
+	lpcmp2: lpcmp@53000 {
+		compatible = "nxp,lpcmp";
+		reg = <0x53000 0x1000>;
+		interrupts = <111 0>;
+		status = "disabled";
+		#io-channel-cells = <2>;
+	};
+
+	flexcan0: can@d4000 {
+		compatible = "nxp,flexcan";
+		reg = <0xd4000 0x4000>;
+		interrupts = <62 0>;
+		interrupt-names = "common";
+		clocks = <&syscon MCUX_FLEXCAN0_CLK>;
+		clk-source = <0>;
+		status = "disabled";
+	};
+
+	flexcan1: can@d8000 {
+		compatible = "nxp,flexcan";
+		reg = <0xd8000 0x4000>;
+		interrupts = <63 0>;
+		interrupt-names = "common";
+		clocks = <&syscon MCUX_FLEXCAN1_CLK>;
+		clk-source = <0>;
+		status = "disabled";
+	};
 };
 
 &systick {

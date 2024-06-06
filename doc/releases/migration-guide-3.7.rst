@@ -59,6 +59,11 @@ Build System
 Kernel
 ******
 
+* All architectures are now required to define the new ``struct arch_esf``, which describes the members
+  of a stack frame. This new struct replaces the named struct ``z_arch_esf_t``. (:github:`73593`)
+
+* The named struct ``z_arch_esf_t`` is now deprecated. Use ``struct arch_esf`` instead. (:github:`73593`)
+
 Boards
 ******
 
@@ -76,13 +81,16 @@ Boards
 * LiteX: Renamed the ``compatible`` of the LiteX VexRiscV interrupt controller node from
   ``vexriscv-intc0`` to :dtcompatible:`litex,vexriscv-intc0`. (:github:`73211`)
 
+* `lairdconnect` boards are now `ezurio` boards. Laird Connectivity has rebranded to `Ezurio <https://www.ezurio.com/laird-connectivity>`_.
+
 Modules
 *******
 
-MbedTLS
-=======
+Mbed TLS
+========
 
-* The hash algorithms SHA-384, SHA-512, MD5 and SHA-1 are not enabled by default anymore.
+* TLS 1.2, RSA, AES, DES, and all the hash algorithms except SHA-256
+  (SHA-224, SHA-384, SHA-512, MD5 and SHA-1) are not enabled by default anymore.
   Their respective Kconfig options now need to be explicitly enabled to be able to use them.
 * The Kconfig options previously named `CONFIG_MBEDTLS_MAC_*_ENABLED` have been renamed.
   The `_MAC` and `_ENABLED` parts have been removed from their names.
@@ -92,6 +100,9 @@ MbedTLS
   of other Kconfig options which are now named `CONFIG_MBEDTLS_SHA*`.
 * The `CONFIG_MBEDTLS_MAC_ALL_ENABLED` Kconfig option has been removed. Its equivalent is the
   combination of :kconfig:option:`CONFIG_MBEDTLS_HASH_ALL_ENABLED` and :kconfig:option:`CONFIG_MBEDTLS_CMAC`.
+* The Kconfig options ``CONFIG_MBEDTLS_MAC_MD4_ENABLED``, ``CONFIG_MBEDTLS_CIPHER_ARC4_ENABLED``
+  and ``CONFIG_MBEDTLS_CIPHER_BLOWFISH_ENABLED`` were removed because they are no more supported
+  in Mbed TLS. (:github:`73222`)
 
 MCUboot
 =======
@@ -238,8 +249,9 @@ Controller Area Network (CAN)
 =============================
 
 * Removed the following deprecated CAN controller devicetree properties. Out-of-tree boards using
-  these properties need to switch to using the ``bus-speed``, ``sample-point``, ``bus-speed-data``,
-  and ``sample-point-data`` devicetree properties for specifying the initial CAN bitrate:
+  these properties can switch to using the ``bitrate``, ``sample-point``, ``bitrate-data``, and
+  ``sample-point-data`` devicetree properties (or rely on :kconfig:option:`CAN_DEFAULT_BITRATE` and
+  :kconfig:option:`CAN_DEFAULT_BITRATE_DATA`) for specifying the initial CAN bitrate:
 
   * ``sjw``
   * ``prop-seg``
@@ -249,6 +261,9 @@ Controller Area Network (CAN)
   * ``prop-seg-data``
   * ``phase-seg1-data``
   * ``phase-seg1-data``
+
+  The ``bus-speed`` and ``bus-speed-data`` CAN controller devicetree properties have been
+  deprecated.
 
   (:github:`68714`)
 
@@ -446,6 +461,10 @@ Bluetooth Audio
   This needs to be added to all instances of CAP discovery callback functions defined.
   (:github:`72797`)
 
+* :c:func:`bt_bap_stream_start` no longer connects the CIS. To connect the CIS,
+  the :c:func:`bt_bap_stream_connect` shall now be called before :c:func:`bt_bap_stream_start`.
+  (:github:`73032`)
+
 * All occurrences of ``set_sirk`` have been changed to just ``sirk`` as the ``s`` in ``sirk`` stands
   for set. (:github:`73413`)
 
@@ -560,16 +579,29 @@ MCUmgr
 ======
 
 * The support for SHA-256 (when using checksum/hash functions), previously provided
-  by either TinyCrypt or MbedTLS, is now provided by either PSA or MbedTLS.
+  by either TinyCrypt or Mbed TLS, is now provided by either PSA or Mbed TLS.
   PSA is the recommended API going forward, however, if it is not already enabled
   (:kconfig:option:`CONFIG_MBEDTLS_PSA_CRYPTO_CLIENT`) and you have tight code size
-  constraints, you may be able to save 1.3 KB by using MbedTLS instead.
+  constraints, you may be able to save 1.3 KB by using Mbed TLS instead.
 
 Modem
 =====
 
 * The ``CONFIG_MODEM_CHAT_LOG_BUFFER`` Kconfig option was
   renamed to :kconfig:option:`CONFIG_MODEM_CHAT_LOG_BUFFER_SIZE`. (:github:`70405`)
+
+.. _zephyr_3.7_posix_api_migration:
+
+POSIX API
+=========
+
+* The :ref:`POSIX API Kconfig deprecations <zephyr_3.7_posix_api_deprecations>` may require
+  changes to Kconfig files (``prj.conf``, etc), as outlined in the release notes. A more automated
+  approach is available via the provided migration script. Simply run the following:
+
+  .. code-block:: bash
+
+    $ python ${ZEPHYR_BASE}/scripts/utils/migrate_posix_kconfigs.py -r root_path
 
 Shell
 =====
