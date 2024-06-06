@@ -163,16 +163,8 @@
 #define MBEDTLS_DES_C
 #endif
 
-#if defined(CONFIG_MBEDTLS_CIPHER_ARC4_ENABLED)
-#define MBEDTLS_ARC4_C
-#endif
-
 #if defined(CONFIG_MBEDTLS_CIPHER_CHACHA20_ENABLED)
 #define MBEDTLS_CHACHA20_C
-#endif
-
-#if defined(CONFIG_MBEDTLS_CIPHER_BLOWFISH_ENABLED)
-#define MBEDTLS_BLOWFISH_C
 #endif
 
 #if defined(CONFIG_MBEDTLS_CIPHER_CCM_ENABLED)
@@ -273,10 +265,6 @@
 
 /* Supported hash algorithms */
 
-#if defined(CONFIG_MBEDTLS_MD4)
-#define MBEDTLS_MD4_C
-#endif
-
 #if defined(CONFIG_MBEDTLS_MD5)
 #define MBEDTLS_MD5_C
 #endif
@@ -373,12 +361,6 @@
     defined(MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED) || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED)
 #define MBEDTLS_RSA_C
-#endif
-
-#if defined(MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED) || \
-    defined(MBEDTLS_KEY_EXCHANGE_RSA_ENABLED) || \
-    defined(MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED) || \
-    defined(MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED)
 #define MBEDTLS_PKCS1_V15
 #define MBEDTLS_PKCS1_V21
 #endif
@@ -428,7 +410,7 @@
 #define MBEDTLS_PK_C
 #endif
 
-#if defined(MBEDTLS_ECDSA_C) || defined(MBEDTLS_RSA_C) || defined(MBEDTLS_X509_USE_C)
+#if defined(MBEDTLS_ECDSA_C) || defined(MBEDTLS_X509_USE_C)
 #define MBEDTLS_ASN1_PARSE_C
 #endif
 
