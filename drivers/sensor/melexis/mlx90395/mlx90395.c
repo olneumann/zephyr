@@ -54,12 +54,17 @@ static int mlx90395_write_register(const struct device *dev, uint8_t reg, uint16
 {
 	const struct mlx90395_config *config = dev->config;
 	uint8_t cmd[3] = { 0 };
+	int ret = 0;
 
 	cmd[0] = reg << 1;
 	cmd[1] = (data & 0xff00) >> 8;
 	cmd[2] = data & 0x00ff;
 
-	return i2c_write_read_dt(&config->i2c, &cmd[0], 3, &cmd[0], 1);
+	ret = i2c_write_read_dt(&config->i2c, &cmd[0], 3, &cmd[0], 1);
+
+	k_msleep(20);
+
+	return ret;
 }
 
 static int mlx90395_set_gain(const struct device *dev, uint16_t gain_sel)
@@ -76,16 +81,27 @@ static int mlx90395_set_gain(const struct device *dev, uint16_t gain_sel)
 	return 0;
 }
 
-static int mlx90395_set_burst_rate(const struct device *dev, uint8_t brd)
+static int mlx90395_set_burst_rate(const struct device *dev, uint16_t brd)
 {
 	uint16_t old_val = 0;
 	uint16_t new_val = 0;
 
-	mlx90395_read_register(dev, RES_XYZ_REG, old_val);
+	mlx90395_read_register(dev, BURST_SEL_REG, old_val);
 	
-	new_val = (old_val & ~BURST_SEL_MASK) | // TODO
+	new_val = (old_val & ~BURST_SEL_MASK) | ((brd << BURST_SEL_SHIFT) & BURST_SEL_MASK);
 	
-	mlx90395_write_register(dev, RES_XYZ_REG, new_val);
+	mlx90395_write_register(dev, BURST_SEL_REG, new_val);
+
+	return 0;
+}
+
+static int mlx90395_set_offset(const struct device *dev)
+{
+	uint16_t cmd = 0;
+
+	mlx90395_write_register(dev, X_OFFSET_REG, cmd);
+	mlx90395_write_register(dev, Y_OFFSET_REG, cmd);
+	mlx90395_write_register(dev, Z_OFFSET_REG, cmd);
 
 	return 0;
 }
@@ -111,13 +127,14 @@ static int mlx90395_set_resolution(const struct device *dev, uint8_t res_x, uint
 // {
 // 	struct mlx90395_data *data = dev->data;
 // 	raw_val_x= data->magn_x;
-
+//
 // 	int32_t value = raw_val_x*gainMultipliers[gain]*uTLSB;
 // 	val->val1 = value / 1000;
 // 	val->val2 = value % 1000;
-
+//
 // 	return 0;
 // }
+
 // // Y
 // static int mlx90395_convert_y(const struct device *dev, struct sensor_value *val, uint16_t raw_val_y)
 // {
@@ -299,9 +316,14 @@ static int mlx90395_init(const struct device *dev)
 	/* Set Resolution */
     mlx90395_set_resolution(dev, 0, 0, 0);
 
+	mlx90395_set_offset(dev);
+
 	/* Set mode */
 	uint8_t zyxt_flags_tmp = X_FLAG | Y_FLAG | Z_FLAG;
 	uint8_t bdr_tmp = 1;
+
+	/* Set Burst Rate */
+	mlx90395_set_burst_rate(dev, bdr_tmp);
 
 	if (mlx90395_set_mode(dev, zyxt_flags_tmp, MLX90395_MODE_BURST, bdr_tmp) < 0) {
 		LOG_ERR("Failed to set mode");
