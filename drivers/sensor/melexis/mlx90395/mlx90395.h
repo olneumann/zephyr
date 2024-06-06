@@ -12,7 +12,7 @@
 enum { STATUS_OK = 0, STATUS_ERROR = 0xff } return_status_t;
 enum { Z_FLAG = 0x8, Y_FLAG = 0x4, X_FLAG = 0x2, T_FLAG = 0x1 } axis_flag_t;
 enum { I2C_BASE_ADDR = 0x0c };
-enum { GAIN_SEL_REG = 0x0, GAIN_SEL_MASK = 0x0070, GAIN_SEL_SHIFT = 4 };
+enum { GAIN_SEL_REG = 0x0, GAIN_SEL_MASK = 0x00f0, GAIN_SEL_SHIFT = 4 };
 enum { HALLCONF_REG = 0x0, HALLCONF_MASK = 0x000f, HALLCONF_SHIFT = 0 };
 enum { BURST_SEL_REG = 0x1, BURST_SEL_MASK = 0x03c0, BURST_SEL_SHIFT = 6};
 enum { TRIG_INT_SEL_REG = 0x1, TRIG_INT_SEL_MASK = 0x8000, TRIG_INT_SEL_SHIFT = 15 };
@@ -79,37 +79,48 @@ enum {
 #define PARAM_NULLFIELD_16BIT 	32768
 #define PARAM_MAGN_LSB_GAUSS    16000 // 0.25mG/LSB or 0.0625mG/LSB for 16 or 18 bit
 
-// Frequencies
-enum mlx90395_frequency {
-	MLX90395_FREQ_ONESHOT,
-	MLX90395_FREQ_1Hz,
-	MLX90395_FREQ_10Hz,
-	MLX90395_FREQ_20Hz,
-	MLX90395_FREQ_50Hz,
-	MLX90395_FREQ_100Hz,
-	MLX90395_FREQ_200Hz, // BW = 0x01 only
-	MLX90395_FREQ_1000Hz, // BW = 0x11 only
-};
+// // Frequencies
+// enum mlx90395_frequency {
+// 	MLX90395_FREQ_ONESHOT,
+// 	MLX90395_FREQ_1Hz,
+// 	MLX90395_FREQ_10Hz,
+// 	MLX90395_FREQ_20Hz,
+// 	MLX90395_FREQ_50Hz,s
+// 	MLX90395_FREQ_100Hz,
+// 	MLX90395_FREQ_200Hz, // BW = 0x01 only
+// 	MLX90395_FREQ_1000Hz, // BW = 0x11 only
+// };
 
-//Bandwidths
-enum mlx90395_bandwidth {
-	MLX90395_MBW_100Hz,
-	MLX90395_MBW_200Hz,
-	MLX90395_MBW_400Hz,
-	MLX90395_MBW_800Hz,
-};
+// //Bandwidths
+// enum mlx90395_bandwidth {
+// 	MLX90395_MBW_100Hz,
+// 	MLX90395_MBW_200Hz,
+// 	MLX90395_MBW_400Hz,
+// 	MLX90395_MBW_800Hz,
+// };
 
-// Set/Reset as a function of measurements
-enum mlx90395_prd_set {
-	MLX90395_DT_PRD_SET_1ms,
-	MLX90395_DT_PRD_SET_25ms,
-	MLX90395_DT_PRD_SET_75ms,
-	MLX90395_DT_PRD_SET_100ms,
-	MLX90395_DT_PRD_SET_250ms,
-	MLX90395_DT_PRD_SET_500ms,
-	MLX90395_DT_PRD_SET_1000ms,
-	MLX90395_DT_PRD_SET_2000ms,
-};
+// // Set/Reset as a function of measurements
+// enum mlx90395_prd_set {
+// 	MLX90395_DT_PRD_SET_1ms,
+// 	MLX90395_DT_PRD_SET_25ms,
+// 	MLX90395_DT_PRD_SET_75ms,
+// 	MLX90395_DT_PRD_SET_100ms,
+// 	MLX90395_DT_PRD_SET_250ms,
+// 	MLX90395_DT_PRD_SET_500ms,
+// 	MLX90395_DT_PRD_SET_1000ms,
+// 	MLX90395_DT_PRD_SET_2000ms,
+// };
+
+enum mlx90393_res {
+  MLX90395_RES_16,
+  MLX90395_RES_17,
+  MLX90395_RES_18,
+  MLX90395_RES_19,
+} mlx90393_res_t;
+
+static const float gainMultipliers[16] = {
+    0.2, 0.25,  0.3333, 0.4, 0.5,  0.6, 0.75,  1,
+    0.1, 0.125, 0.1667, 0.2, 0.25, 0.3, 0.375, 0.5};
 
 enum mlx90395_mode {
 	MLX90395_MODE_IDLE,
@@ -129,9 +140,9 @@ struct mlx90395_config {
 };
 
 struct mlx90395_data {
-	uint32_t magn_x;
-	uint32_t magn_y;
-	uint32_t magn_z;
+	uint16_t magn_x;
+	uint16_t magn_y;
+	uint16_t magn_z;
 	struct k_sem sem;
 };
 

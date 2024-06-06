@@ -20,29 +20,129 @@ static int mlx90395_sample_fetch(const struct device *dev, enum sensor_channel c
 {
 	const struct mlx90395_config *config = dev->config;
 	struct mlx90395_data *data = dev->data;
-	uint8_t cmd[7] = { 0 };
+	uint8_t cmd[9] = { 0 };
 	int ret = 0;
 
-	cmd[0] = MLX90395_CMD_READ_MEASUREMENT | X_FLAG | Y_FLAG | Z_FLAG; // TODO: Individual channels
+	cmd[0] = MLX90395_CMD_READ_MEASUREMENT; 
 
 	k_sem_take(&data->sem, K_FOREVER);
 
-	if (i2c_write_read_dt(&config->i2c, &cmd[0], 1, &cmd[0], 7) < 0) {
+	if (i2c_write_read_dt(&config->i2c, &cmd[0], 1, &cmd[0], 8) < 0) {
 		LOG_ERR("Failed to read data sample");
 		ret = -EIO;
 	}
 
 	k_sem_give(&data->sem);
 
-	data->magn_x = (uint16_t)(cmd[1] << 8 | cmd[2]);
-	data->magn_y = (uint16_t)(cmd[3] << 8 | cmd[4]);
-	data->magn_z = (uint16_t)(cmd[5] << 8 | cmd[6]);
+	data->magn_x = (uint16_t)(cmd[2] << 8 | cmd[3]);
+	data->magn_y = (uint16_t)(cmd[4] << 8 | cmd[5]);
+	data->magn_z = (uint16_t)(cmd[6] << 8 | cmd[7]);
 
 	return ret;
 }
 
-// Convert functions
-// XY
+static int mlx90395_read_register(const struct device *dev, uint8_t reg, uint16_t data)
+{
+	const struct mlx90395_config *config = dev->config;
+	uint8_t cmd[2] = { 0 };
+	cmd[0] = reg << 1;
+
+	return i2c_write_read_dt(&config->i2c, &cmd[0], 1, &cmd[0], 2);
+}
+
+static int mlx90395_write_register(const struct device *dev, uint8_t reg, uint16_t data)
+{
+	const struct mlx90395_config *config = dev->config;
+	uint8_t cmd[3] = { 0 };
+
+	cmd[0] = reg << 1;
+	cmd[1] = (data & 0xff00) >> 8;
+	cmd[2] = data & 0x00ff;
+
+	return i2c_write_read_dt(&config->i2c, &cmd[0], 3, &cmd[0], 1);
+}
+
+static int mlx90395_set_gain(const struct device *dev, uint16_t gain_sel)
+{
+	uint16_t old_val = 0;
+	uint16_t new_val = 0;
+	
+	mlx90395_read_register(dev, GAIN_SEL_REG, old_val);
+	
+	new_val = (old_val & ~GAIN_SEL_MASK) | ((gain_sel << GAIN_SEL_SHIFT) & GAIN_SEL_MASK);
+	
+	mlx90395_write_register(dev, GAIN_SEL_REG, new_val);
+
+	return 0;
+}
+
+static int mlx90395_set_burst_rate(const struct device *dev, uint8_t brd)
+{
+	uint16_t old_val = 0;
+	uint16_t new_val = 0;
+
+	mlx90395_read_register(dev, RES_XYZ_REG, old_val);
+	
+	new_val = (old_val & ~BURST_SEL_MASK) | // TODO
+	
+	mlx90395_write_register(dev, RES_XYZ_REG, new_val);
+
+	return 0;
+}
+
+static int mlx90395_set_resolution(const struct device *dev, uint8_t res_x, uint8_t res_y, uint8_t res_z)
+{
+	uint16_t res_xyz = ((res_z & 0x3)<<4) | ((res_y & 0x3)<<2) | (res_x & 0x3);
+	uint16_t old_val = 0;
+	uint16_t new_val = 0;
+
+	mlx90395_read_register(dev, RES_XYZ_REG, old_val);
+	
+	new_val = (old_val & ~RES_XYZ_MASK) | ((res_xyz << RES_XYZ_SHIFT) & RES_XYZ_MASK);
+	
+	mlx90395_write_register(dev, RES_XYZ_REG, new_val);
+
+	return 0;
+}
+
+// // Convert functions
+// // X
+// static int mlx90395_convert_x(const struct device *dev, struct sensor_value *val, uint16_t raw_val_x)
+// {
+// 	struct mlx90395_data *data = dev->data;
+// 	raw_val_x= data->magn_x;
+
+// 	int32_t value = raw_val_x*gainMultipliers[gain]*uTLSB;
+// 	val->val1 = value / 1000;
+// 	val->val2 = value % 1000;
+
+// 	return 0;
+// }
+// // Y
+// static int mlx90395_convert_y(const struct device *dev, struct sensor_value *val, uint16_t raw_val_y)
+// {
+// 	struct mlx90395_data *data = dev->data;
+// 	raw_val_y= data->magn_y;
+
+// 	int32_t value = raw_val_y*gainMultipliers[gain]*uTLSB;
+// 	val->val1 = value; // / 1000;
+// 	val->val2 = value; // % 1000;
+
+// 	return 0;
+// }
+// // Z
+// static int mlx90395_convert_z(const struct device *dev, struct sensor_value *val, uint16_t raw_val_z)
+// {
+// 	struct mlx90395_data *data = dev->data;
+// 	raw_val_z= data->magn_z;
+
+// 	int32_t value = raw_val_z*gainMultipliers[gain]*uTLSB;
+// 	val->val1 = value / 1000;
+// 	val->val2 = value % 1000;
+
+// 	return 0;
+// }
+
 static int mlx90395_convert_xy(struct sensor_value *val, uint32_t raw_val)
 {
 	int32_t value = raw_val / 140 * 1000;
@@ -51,7 +151,7 @@ static int mlx90395_convert_xy(struct sensor_value *val, uint32_t raw_val)
 
 	return 0;
 }
-//Z
+
 static int mlx90395_convert_z(struct sensor_value *val, uint32_t raw_val)
 {
 	int32_t value = raw_val / 140 * 1000;
@@ -82,7 +182,7 @@ static int mlx90395_channel_get(const struct device *dev, enum sensor_channel ch
 			break;
 		default:
 			LOG_ERR("Unsupported channel");
-			ret = -ENOTSUP;	
+			ret = -ENOTSUP;
 	}
 
 	k_sem_give(&data->sem);
@@ -98,37 +198,45 @@ static const struct sensor_driver_api mlx90395_driver_api = {
 static int mlx90395_exit(const struct device *dev)
 {
 	const struct mlx90395_config *config = dev->config;
-	uint8_t cmd = MLX90395_CMD_EXIT;
+	uint8_t cmd[2] = { 0 };
 
-	return i2c_write_read_dt(&config->i2c, &cmd, 1, &cmd, 1);
+	cmd[0] = 0x80;
+	cmd[1] = MLX90395_CMD_EXIT;
+
+	return i2c_write_read_dt(&config->i2c, &cmd[0], 2, &cmd[0], 1);
 }
 
 static int mlx90395_reset(const struct device *dev)
 {
 	const struct mlx90395_config *config = dev->config;
-	uint8_t cmd = MLX90395_CMD_RESET;
+	uint8_t cmd[2] = { 0 };
 
-	return i2c_write_read_dt(&config->i2c, &cmd, 1, &cmd, 1);
-}
+	cmd[0] = 0x80;
+	cmd[1] = MLX90395_CMD_RESET;
 
-static int mlx90395_write_register(const struct device *dev, uint8_t reg, uint16_t data)
-{
-	const struct mlx90395_config *config = dev->config;
-	uint8_t cmd[3] = { 0 };
-
-	cmd[0] = (reg & 0x7f) << 1;
-	cmd[1] = (data & 0xff00) >> 8;
-	cmd[2] = 	data & 0x00ff;
-
-	return i2c_write_read_dt(&config->i2c, cmd, 3, cmd, 1);
+	return i2c_write_dt(&config->i2c, &cmd[0], 2);
 }
 
 static int mlx90395_start_burst(const struct device *dev, uint8_t zyxt_flags)
 {
 	const struct mlx90395_config *config = dev->config;
-	uint8_t cmd = MLX90395_CMD_START_BURST | zyxt_flags;
+	uint8_t cmd[2] = { 0 };
 
-	return i2c_write_read_dt(&config->i2c, &cmd, 1, &cmd, 1);
+	cmd[0] = 0x80;
+	cmd[1] = MLX90395_CMD_START_BURST | zyxt_flags;
+
+	return i2c_write_read_dt(&config->i2c, &cmd[0], 2, &cmd[0], 1);
+}
+
+static int mlx90395_start_single_measurement(const struct device *dev, uint8_t zyxt_flags)
+{
+	const struct mlx90395_config *config = dev->config;
+	uint8_t cmd[2] = { 0 };
+
+	cmd[0] = 0x80;
+	cmd[1] = MLX90395_CMD_START_MEASUREMENT | zyxt_flags;
+
+	return i2c_write_read_dt(&config->i2c, &cmd[0], 2, &cmd[0], 1);
 }
 
 static int mlx90395_set_mode(const struct device *dev, uint8_t zyxt_flags, enum mlx90395_mode mode, uint8_t bdr)
@@ -138,11 +246,13 @@ static int mlx90395_set_mode(const struct device *dev, uint8_t zyxt_flags, enum 
 			mlx90395_exit(dev);
 			break;
 		case MLX90395_MODE_BURST:
-			mlx90395_write_register(dev, BURST_SEL_REG, bdr);
+			/* Set burst rate and gains */
+			uint16_t bdr_tmp = 0x01C0 | bdr; // sets burstSel for z y x
+			mlx90395_write_register(dev, BURST_SEL_REG, bdr_tmp); // TO BE REMOVED
 			mlx90395_start_burst(dev, zyxt_flags);
 			break;
 		case MLX90395_MODE_SINGLE_MEASUREMENT:
-			// TODO: Implement
+			mlx90395_start_single_measurement(dev, zyxt_flags);
 			break;
 		case MLX90395_MODE_WAKE_ON_CHANGE:
 			// TODO: Implement
@@ -151,6 +261,8 @@ static int mlx90395_set_mode(const struct device *dev, uint8_t zyxt_flags, enum 
 			LOG_ERR("Invalid mode");
 			return -EINVAL;
 	}
+
+	return 0;
 }
 
 static int mlx90395_init(const struct device *dev)
@@ -178,6 +290,14 @@ static int mlx90395_init(const struct device *dev)
 	}
 
 	k_msleep(50);
+
+	/* Set gain */
+	uint8_t gain_tmp = 0xf; // maximum gain for getting small tesla values
+	
+	mlx90395_set_gain(dev, gain_tmp);
+
+	/* Set Resolution */
+    mlx90395_set_resolution(dev, 0, 0, 0);
 
 	/* Set mode */
 	uint8_t zyxt_flags_tmp = X_FLAG | Y_FLAG | Z_FLAG;
