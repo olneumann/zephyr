@@ -116,6 +116,9 @@ Deprecated in this release
  * SPI
 
   * Deprecated :c:func:`spi_is_ready` API function has been removed.
+  * Deprecated :c:func:`spi_transceive_async` API function has been removed.
+  * Deprecated :c:func:`spi_read_async` API function has been removed.
+  * Deprecated :c:func:`spi_write_async` API function has been removed.
 
 Architectures
 *************
@@ -484,6 +487,11 @@ Libraries / Subsystems
     * By enabling :kconfig:option:`CONFIG_HAWKBIT_CUSTOM_ATTRIBUTES`, a callback function can be
       registered to set the device attributes that are sent to the hawkBit server. Use the
       :c:func:`hawkbit_set_custom_data_cb` function to register the callback.
+
+  * MCUmgr
+
+    * Instructions for the deprecated mcumgr go tool have been removed, a list of alternative,
+      supported clients can be found on :ref:`mcumgr_tools_libraries`.
 
 * Logging
 
