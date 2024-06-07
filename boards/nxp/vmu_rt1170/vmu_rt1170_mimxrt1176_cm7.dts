@@ -178,6 +178,41 @@
 	current-speed = <115200>;
 };
 
+&lpuart6 {
+	status = "okay";
+	single-wire;
+	rx-invert;
+
+	sbus {
+		compatible = "futaba,sbus";
+		right_stick_x {
+			channel = <1>;
+			type = <INPUT_EV_ABS>;
+			zephyr,code = <INPUT_ABS_RX>;
+		};
+		right_stick_y {
+			channel = <2>;
+			type = <INPUT_EV_ABS>;
+			zephyr,code = <INPUT_ABS_RY>;
+		};
+		left_stick_y {
+			channel = <3>;
+			type = <INPUT_EV_ABS>;
+			zephyr,code = <INPUT_ABS_Y>;
+		};
+		left_stick_x {
+			channel = <4>;
+			type = <INPUT_EV_ABS>;
+			zephyr,code = <INPUT_ABS_X>;
+		};
+		kill_switch {
+			channel = <5>;
+			type = <INPUT_EV_KEY>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+};
+
 
 &flexcan1 {
 	status = "okay";
@@ -446,7 +481,18 @@
 
 &enet1g {
 	status = "okay";
-	int-gpios = <&gpio5 10 GPIO_ACTIVE_HIGH>;
+};
+
+&enet1g_mac {
+	status = "okay";
+};
+
+&enet1g_mdio {
+	status = "okay";
+	enet1g_phy: phy@1 {
+		status = "okay";
+		int-gpios = <&gpio5 10 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 zephyr_udc0: &usb1 {
