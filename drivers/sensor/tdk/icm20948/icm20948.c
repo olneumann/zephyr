@@ -7,6 +7,7 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/util.h>
 #include <zephyr/types.h>
 
 #include "icm20948.h"
@@ -14,10 +15,18 @@
 
 LOG_MODULE_REGISTER(ICM20948, CONFIG_SENSOR_LOG_LEVEL);
 
-#define ICM20948_ACCEL_RANGE       2048 // At +-16G sensitivity
-#define ICM20948_GYRO_RANGE        16   // At +-2000 dps sensitivity
-#define ICM20948_TEMP_RANGE        334
+#define ICM20948_TEMP_RANGE 334
 #define AK09916_MAGNETOMETER_RANGE 7
+
+static const uint16_t icm20948_gyro_sensitivity_x10[] = {
+	1310, 655, 328, 164 // LSB/(dps/10)
+};
+
+static const uint16_t icm20948_accel_sensitivity_shift[]= { // binary shift
+	14, 13, 12, 11 // LSB/g
+};
+
+static const double icm20948_magn_sensitivity = 0.15; // uT/LSB
 
 void icm20948_set_correct_bank(const struct device *dev, uint8_t bank)
 {
@@ -91,22 +100,28 @@ static int ak09916_read_register(const struct device *dev, uint8_t reg, uint8_t 
 	return err == 0 ? 0 : -1;
 }
 
-static void icm20948_convert_accel(struct sensor_value *val, int16_t raw_val)
+static void icm20948_convert_accel(struct sensor_value *val, int16_t raw_val, uint16_t sensitivity_shift)
 {
-	val->val1 = raw_val / ICM20948_ACCEL_RANGE;
-	val->val2 = raw_val % ICM20948_ACCEL_RANGE;
+	int64_t conv_val;
+
+	conv_val = ((int64_t)raw_val * SENSOR_G) >> sensitivity_shift;
+	val->val1 = conv_val / 1000000;
+	val->val2 = conv_val % 1000000;
 }
 
-static void icm20948_convert_gyro(struct sensor_value *val, int16_t raw_val)
+static void icm20948_convert_gyro(struct sensor_value *val, int16_t raw_val, uint16_t sensitivity_x10)
 {
-	val->val1 = raw_val / ICM20948_GYRO_RANGE;
-	val->val2 = raw_val % ICM20948_GYRO_RANGE;
+	int64_t conv_val;
+
+	conv_val = ((int64_t)raw_val * SENSOR_PI * 10) / (sensitivity_x10 * 180U);
+	val->val1 = conv_val / 1000000;
+	val->val2 = conv_val % 1000000;
 }
 
 static void icm20948_convert_magn(struct sensor_value *val, int16_t raw_val)
 {
-	val->val1 = raw_val / AK09916_MAGNETOMETER_RANGE;
-	val->val2 = raw_val % AK09916_MAGNETOMETER_RANGE;
+	double value = (double)raw_val * icm20948_magn_sensitivity;
+	sensor_value_from_double(val, value);
 }
 
 static void icm20948_convert_temp(struct sensor_value *val, int16_t raw_val)
@@ -121,32 +136,32 @@ static int icm20948_channel_get(const struct device *dev, enum sensor_channel ch
 
 	switch (chan) {
 	case SENSOR_CHAN_ACCEL_XYZ:
-		icm20948_convert_accel(&val[0], data->accel_x);
-		icm20948_convert_accel(&val[1], data->accel_y);
-		icm20948_convert_accel(&val[2], data->accel_z);
+		icm20948_convert_accel(&val[0], data->accel_x, icm20948_accel_sensitivity_shift[3]);
+		icm20948_convert_accel(&val[1], data->accel_y, icm20948_accel_sensitivity_shift[3]);
+		icm20948_convert_accel(&val[2], data->accel_z, icm20948_accel_sensitivity_shift[3]);
 		break;
 	case SENSOR_CHAN_ACCEL_X:
-		icm20948_convert_accel(val, data->accel_x);
+		icm20948_convert_accel(val, data->accel_x, icm20948_accel_sensitivity_shift[3]);
 		break;
 	case SENSOR_CHAN_ACCEL_Y:
-		icm20948_convert_accel(val, data->accel_y);
+		icm20948_convert_accel(val, data->accel_y, icm20948_accel_sensitivity_shift[3]);
 		break;
 	case SENSOR_CHAN_ACCEL_Z:
-		icm20948_convert_accel(val, data->accel_z);
+		icm20948_convert_accel(val, data->accel_z, icm20948_accel_sensitivity_shift[3]);
 		break;
 	case SENSOR_CHAN_GYRO_XYZ:
-		icm20948_convert_gyro(&val[0], data->gyro_x);
-		icm20948_convert_gyro(&val[1], data->gyro_y);
-		icm20948_convert_gyro(&val[2], data->gyro_z);
+		icm20948_convert_gyro(&val[0], data->gyro_x, icm20948_gyro_sensitivity_x10[3]);
+		icm20948_convert_gyro(&val[1], data->gyro_y, icm20948_gyro_sensitivity_x10[3]);
+		icm20948_convert_gyro(&val[2], data->gyro_z, icm20948_gyro_sensitivity_x10[3]);
 		break;
 	case SENSOR_CHAN_GYRO_X:
-		icm20948_convert_gyro(val, data->gyro_x);
+		icm20948_convert_gyro(val, data->gyro_x, icm20948_gyro_sensitivity_x10[3]);
 		break;
 	case SENSOR_CHAN_GYRO_Y:
-		icm20948_convert_gyro(val, data->gyro_y);
+		icm20948_convert_gyro(val, data->gyro_y, icm20948_gyro_sensitivity_x10[3]);
 		break;
 	case SENSOR_CHAN_GYRO_Z:
-		icm20948_convert_gyro(val, data->gyro_z);
+		icm20948_convert_gyro(val, data->gyro_z, icm20948_gyro_sensitivity_x10[3]);
 		break;
 	case SENSOR_CHAN_MAGN_XYZ:
 		icm20948_convert_magn(&val[0], data->magn_x);
@@ -188,7 +203,7 @@ static int icm20948_sample_fetch(const struct device *dev, enum sensor_channel c
 		return err;
 	}
 
-	int16_t *p = (int16_t *)&rx_buffer[1];
+	int16_t *p = (int16_t *)&rx_buffer[0];
 
 	data->accel_x = sys_be16_to_cpu(p[0]);
 	data->accel_y = sys_be16_to_cpu(p[1]);
