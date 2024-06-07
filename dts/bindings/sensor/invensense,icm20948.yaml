@@ -1,0 +1,5 @@
+description: ICM20948 9-axis motion tracking device
+
+compatible: "invensense,icm20948"
+
+include: [base.yaml, sensor-device.yaml, spi-device.yaml]

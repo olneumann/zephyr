@@ -1,0 +1,6 @@
+# ICM20948 sensor driver
+# SPDX-License-Identifier: Apache-2.0
+
+zephyr_library()
+
+zephyr_library_sources(icm20948.c)

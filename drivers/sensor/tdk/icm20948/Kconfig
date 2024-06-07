@@ -1,0 +1,10 @@
+# Kconfig - ICM20948 sensor driver
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig ICM20948
+	bool "Custom ICM20948 sensor driver"
+	default y
+	depends on DT_HAS_INVENSENSE_ICM20948_ENABLED
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_INVENSENSE_ICM20948),i2c)
+	help
+	  Enable ICM20948 sensor
