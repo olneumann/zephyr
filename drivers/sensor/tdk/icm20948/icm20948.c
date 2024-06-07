@@ -26,7 +26,7 @@ static const uint16_t icm20948_accel_sensitivity_shift[]= { // binary shift
 	14, 13, 12, 11 // LSB/g
 };
 
-static const double icm20948_magn_sensitivity = 0.15; // uT/LSB
+static const double icm20948_magn_sensitivity = 6666; // LSB/mG
 
 void icm20948_set_correct_bank(const struct device *dev, uint8_t bank)
 {
@@ -63,7 +63,6 @@ static int icm20948_read_register(const struct device *dev, uint8_t bank, uint8_
 
 static int ak09916_write_register(const struct device *dev, uint8_t reg, uint8_t data)
 {
-	const struct icm20948_config *config = dev->config;
 	int err = 0;
 
 	err |= icm20948_write_register(
@@ -81,7 +80,6 @@ static int ak09916_write_register(const struct device *dev, uint8_t reg, uint8_t
 
 static int ak09916_read_register(const struct device *dev, uint8_t reg, uint8_t *data)
 {
-	const struct icm20948_config *config = dev->config;
 	int err = 0;
 
 	err |= icm20948_write_register(
@@ -120,7 +118,7 @@ static void icm20948_convert_gyro(struct sensor_value *val, int16_t raw_val, uin
 
 static void icm20948_convert_magn(struct sensor_value *val, int16_t raw_val)
 {
-	double value = (double)raw_val * icm20948_magn_sensitivity;
+	double value = (double)raw_val / icm20948_magn_sensitivity;
 	sensor_value_from_double(val, value);
 }
 
@@ -222,7 +220,6 @@ static int icm20948_sample_fetch(const struct device *dev, enum sensor_channel c
 static int icm20948_init(const struct device *dev)
 {
 	const struct icm20948_config *config = dev->config;
-	struct icm20948_data *data = dev->data;
 	uint8_t value;
 
 	if (!device_is_ready(config->i2c.bus)) {
