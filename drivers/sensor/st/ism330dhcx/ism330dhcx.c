@@ -678,7 +678,7 @@ static int ism330dhcx_init_chip(const struct device *dev)
 		return -EIO;
 	}
 
-	LOG_INF("chip id 0x%x", chip_id);
+	LOG_DBG("chip id 0x%x", chip_id);
 
 	if (chip_id != ISM330DHCX_ID) {
 		LOG_DBG("Invalid chip id 0x%x", chip_id);

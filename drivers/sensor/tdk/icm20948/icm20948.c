@@ -26,7 +26,7 @@ static const uint16_t icm20948_accel_sensitivity_shift[]= { // binary shift
 	14, 13, 12, 11 // LSB/g
 };
 
-static const double icm20948_magn_sensitivity = 6666; // LSB/mG
+static const double icm20948_magn_sensitivity = 6666; // does not really fit ?
 
 void icm20948_set_correct_bank(const struct device *dev, uint8_t bank)
 {
