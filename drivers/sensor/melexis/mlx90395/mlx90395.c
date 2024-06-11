@@ -20,6 +20,7 @@ static int mlx90395_sample_fetch(const struct device *dev, enum sensor_channel c
 {
 	const struct mlx90395_config *config = dev->config;
 	struct mlx90395_data *data = dev->data;
+
 	uint8_t cmd[9] = { 0 };
 	int ret = 0;
 
@@ -74,6 +75,7 @@ static int mlx90395_set_offset(const struct device *dev, uint16_t cmd_x, uint16_
 	mlx90395_write_register(dev, X_OFFSET_REG, cmd_x);
 	mlx90395_write_register(dev, Y_OFFSET_REG, cmd_y);
 	mlx90395_write_register(dev, Z_OFFSET_REG, cmd_z);
+
 
 	return 0;
 }

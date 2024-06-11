@@ -223,7 +223,7 @@ static int mmc5983ma_init(const struct device *dev)
 	/* Initialize semaphore */
 	k_sem_init(&data->sem, 1, 1);
 
-	LOG_INF("MMC5983 Initialized");
+	LOG_DBG("MMC5983 Initialized");
 
 	return 0;
 }

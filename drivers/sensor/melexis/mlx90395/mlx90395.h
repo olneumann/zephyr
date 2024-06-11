@@ -75,44 +75,6 @@ enum {
 #define MASK_PRD_SET            GENMASK(6,4)
 #define BIT_EN_PRD_SET			7
 
-#define CONVERT_FUNCTIONS
-
-// #define PARAM_NULLFIELD_18BIT 	131072
-// #define PARAM_NULLFIELD_16BIT 	32768
-// #define PARAM_MAGN_LSB_GAUSS    16000 // 0.25mG/LSB or 0.0625mG/LSB for 16 or 18 bit
-
-// // Frequencies
-// enum mlx90395_frequency {
-// 	MLX90395_FREQ_ONESHOT,
-// 	MLX90395_FREQ_1Hz,
-// 	MLX90395_FREQ_10Hz,
-// 	MLX90395_FREQ_20Hz,
-// 	MLX90395_FREQ_50Hz,s
-// 	MLX90395_FREQ_100Hz,
-// 	MLX90395_FREQ_200Hz, // BW = 0x01 only
-// 	MLX90395_FREQ_1000Hz, // BW = 0x11 only
-// };
-
-// //Bandwidths
-// enum mlx90395_bandwidth {
-// 	MLX90395_MBW_100Hz,
-// 	MLX90395_MBW_200Hz,
-// 	MLX90395_MBW_400Hz,
-// 	MLX90395_MBW_800Hz,
-// };
-
-// // Set/Reset as a function of measurements
-// enum mlx90395_prd_set {
-// 	MLX90395_DT_PRD_SET_1ms,
-// 	MLX90395_DT_PRD_SET_25ms,
-// 	MLX90395_DT_PRD_SET_75ms,
-// 	MLX90395_DT_PRD_SET_100ms,
-// 	MLX90395_DT_PRD_SET_250ms,
-// 	MLX90395_DT_PRD_SET_500ms,
-// 	MLX90395_DT_PRD_SET_1000ms,
-// 	MLX90395_DT_PRD_SET_2000ms,
-// };
-
 enum mlx90393_res {
   MLX90395_RES_16,
   MLX90395_RES_17,

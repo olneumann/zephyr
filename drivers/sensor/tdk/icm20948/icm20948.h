@@ -1,4 +1,4 @@
-/#ifndef DRIVERS_SENSOR_ICM20948_H_
+#ifndef DRIVERS_SENSOR_ICM20948_H_
 #define DRIVERS_SENSOR_ICM20948_H_
 
 #include <zephyr/drivers/i2c.h>
