@@ -1,0 +1,7 @@
+description: |
+    TDK ICM20948 9-axis IMU (Inertial Measurement Unit) sensor
+    accessed through I2C bus
+
+compatible: "tdk,icm20948"
+
+include: ["i2c-device.yaml"]

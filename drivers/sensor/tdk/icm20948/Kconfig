@@ -8,3 +8,4 @@ menuconfig ICM20948
 	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_INVENSENSE_ICM20948),i2c)
 	help
 	  Enable ICM20948 sensor
+    
