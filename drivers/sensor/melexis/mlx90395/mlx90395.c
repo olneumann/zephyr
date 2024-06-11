@@ -123,7 +123,6 @@ static int mlx90395_set_resolution(const struct device *dev, uint8_t res_x, uint
 	return 0;
 }
 
-#ifdef CONVERT_FUNCTIONS
 // Convert functions: could be used to get a more meaningful value from a physical point of view, 
 // but otherwise raw values in the uint16 range can be used to analize the general behavior
 // of the sensor.
@@ -143,7 +142,6 @@ static int mlx90395_convert_z(struct sensor_value *val, uint32_t raw_val)
 
 	return sensor_value_from_double(val, raw_val);
 }
-#endif
 
 static int mlx90395_channel_get(const struct device *dev, enum sensor_channel chan, struct sensor_value *val)
 {
