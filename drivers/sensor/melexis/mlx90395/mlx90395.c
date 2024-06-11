@@ -23,7 +23,7 @@ static int mlx90395_sample_fetch(const struct device *dev, enum sensor_channel c
 	uint8_t cmd[9] = { 0 };
 	int ret = 0;
 
-	cmd[0] = MLX90395_CMD_READ_MEASUREMENT; 
+	cmd[0] = MLX90395_CMD_READ_MEASUREMENT;
 
 	k_sem_take(&data->sem, K_FOREVER);
 
@@ -67,6 +67,17 @@ static int mlx90395_write_register(const struct device *dev, uint8_t reg, uint16
 	return ret;
 }
 
+static int mlx90395_set_offset(const struct device *dev, uint16_t cmd_x, uint16_t cmd_y, uint16_t cmd_z)
+{
+	// uint16_t cmd = 0
+
+	mlx90395_write_register(dev, X_OFFSET_REG, cmd_x);
+	mlx90395_write_register(dev, Y_OFFSET_REG, cmd_y);
+	mlx90395_write_register(dev, Z_OFFSET_REG, cmd_z);
+
+	return 0;
+}
+
 static int mlx90395_set_gain(const struct device *dev, uint16_t gain_sel)
 {
 	uint16_t old_val = 0;
@@ -95,17 +106,6 @@ static int mlx90395_set_burst_rate(const struct device *dev, uint16_t brd)
 	return 0;
 }
 
-static int mlx90395_set_offset(const struct device *dev)
-{
-	uint16_t cmd = 0;
-
-	mlx90395_write_register(dev, X_OFFSET_REG, cmd);
-	mlx90395_write_register(dev, Y_OFFSET_REG, cmd);
-	mlx90395_write_register(dev, Z_OFFSET_REG, cmd);
-
-	return 0;
-}
-
 static int mlx90395_set_resolution(const struct device *dev, uint8_t res_x, uint8_t res_y, uint8_t res_z)
 {
 	uint16_t res_xyz = ((res_z & 0x3)<<4) | ((res_y & 0x3)<<2) | (res_x & 0x3);
@@ -121,62 +121,27 @@ static int mlx90395_set_resolution(const struct device *dev, uint8_t res_x, uint
 	return 0;
 }
 
-// // Convert functions
-// // X
-// static int mlx90395_convert_x(const struct device *dev, struct sensor_value *val, uint16_t raw_val_x)
-// {
-// 	struct mlx90395_data *data = dev->data;
-// 	raw_val_x= data->magn_x;
-//
-// 	int32_t value = raw_val_x*gainMultipliers[gain]*uTLSB;
-// 	val->val1 = value / 1000;
-// 	val->val2 = value % 1000;
-//
-// 	return 0;
-// }
+#ifdef CONVERT_FUNCTIONS
+// Convert functions: could be used to get a more meaningful value from a physical point of view, 
+// but otherwise raw values in the uint16 range can be used to analize the general behavior
+// of the sensor.
 
-// // Y
-// static int mlx90395_convert_y(const struct device *dev, struct sensor_value *val, uint16_t raw_val_y)
-// {
-// 	struct mlx90395_data *data = dev->data;
-// 	raw_val_y= data->magn_y;
-
-// 	int32_t value = raw_val_y*gainMultipliers[gain]*uTLSB;
-// 	val->val1 = value; // / 1000;
-// 	val->val2 = value; // % 1000;
-
-// 	return 0;
-// }
-// // Z
-// static int mlx90395_convert_z(const struct device *dev, struct sensor_value *val, uint16_t raw_val_z)
-// {
-// 	struct mlx90395_data *data = dev->data;
-// 	raw_val_z= data->magn_z;
-
-// 	int32_t value = raw_val_z*gainMultipliers[gain]*uTLSB;
-// 	val->val1 = value / 1000;
-// 	val->val2 = value % 1000;
-
-// 	return 0;
-// }
-
+// XY
 static int mlx90395_convert_xy(struct sensor_value *val, uint32_t raw_val)
 {
-	int32_t value = raw_val / 140 * 1000;
-	val->val1 = value / 1000;
-	val->val2 = value % 1000;
+	// double value = raw_val / 2500000.0f;
 
-	return 0;
+	return sensor_value_from_double(val, raw_val);
 }
 
+// Z
 static int mlx90395_convert_z(struct sensor_value *val, uint32_t raw_val)
 {
-	int32_t value = raw_val / 140 * 1000;
-	val->val1 = value / 1000;
-	val->val2 = value % 1000;
+	// double value = raw_val / 2500000.0f;
 
-	return 0;
+	return sensor_value_from_double(val, raw_val);
 }
+#endif
 
 static int mlx90395_channel_get(const struct device *dev, enum sensor_channel chan, struct sensor_value *val)
 {
@@ -218,7 +183,7 @@ static int mlx90395_exit(const struct device *dev)
 	uint8_t cmd[2] = { 0 };
 
 	cmd[0] = 0x80;
-	cmd[1] = MLX90395_CMD_EXIT;
+	cmd[1] = MLX90395_CMD_EXIT | X_FLAG | Y_FLAG | Z_FLAG;
 
 	return i2c_write_read_dt(&config->i2c, &cmd[0], 2, &cmd[0], 1);
 }
@@ -308,6 +273,8 @@ static int mlx90395_init(const struct device *dev)
 
 	k_msleep(50);
 
+	mlx90395_set_offset(dev,0x8000,0x8000,0x8000);
+
 	/* Set gain */
 	uint8_t gain_tmp = 0xf; // maximum gain for getting small tesla values
 	
@@ -315,8 +282,6 @@ static int mlx90395_init(const struct device *dev)
 
 	/* Set Resolution */
     mlx90395_set_resolution(dev, 0, 0, 0);
-
-	mlx90395_set_offset(dev);
 
 	/* Set mode */
 	uint8_t zyxt_flags_tmp = X_FLAG | Y_FLAG | Z_FLAG;

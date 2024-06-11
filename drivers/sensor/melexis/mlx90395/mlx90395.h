@@ -75,9 +75,11 @@ enum {
 #define MASK_PRD_SET            GENMASK(6,4)
 #define BIT_EN_PRD_SET			7
 
-#define PARAM_NULLFIELD_18BIT 	131072
-#define PARAM_NULLFIELD_16BIT 	32768
-#define PARAM_MAGN_LSB_GAUSS    16000 // 0.25mG/LSB or 0.0625mG/LSB for 16 or 18 bit
+#define CONVERT_FUNCTIONS
+
+// #define PARAM_NULLFIELD_18BIT 	131072
+// #define PARAM_NULLFIELD_16BIT 	32768
+// #define PARAM_MAGN_LSB_GAUSS    16000 // 0.25mG/LSB or 0.0625mG/LSB for 16 or 18 bit
 
 // // Frequencies
 // enum mlx90395_frequency {
